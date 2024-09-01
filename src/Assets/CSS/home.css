@@ -1,0 +1,12 @@
+.home-container{
+    height: 100vh;
+    background-image: url('https://media.istockphoto.com/id/1080282486/photo/boardwalk-background-texture-of-light-wood-table.jpg?s=2048x2048&w=is&k=20&c=LDnDypTckYHffCZOWc8HwDEl5PqZM3Z3oBNn-SO31rs=');
+}
+
+@media (max-width: 426px) {
+    .home-container{
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+    }
+}

@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Marathi:ital@0;1&display=swap');
+
+.title-div{
+    display: flex;
+    justify-content: center;
+    /* align-items: center; */
+}
+
+.tiro-devanagari-marathi-regular-italic {
+    font-family: "Tiro Devanagari Marathi", serif;
+    font-weight: bold;
+    font-style: italic;
+    font-size: 200px;
+    padding: 15px;
+    background: url('https://media.istockphoto.com/id/659646236/photo/dark-old-grunge-vintage-wood-panels-used-as-background.jpg?s=2048x2048&w=is&k=20&c=iE9GNRH9ofUEzer6RVhPf4K_Mf5s3qy_Hv8bVkhnS8I=') -20px -20px no-repeat;
+    -webkit-text-fill-color: transparent;
+    -webkit-background-clip: text;
+    animation: fade 1s linear;
+}
+
+@keyframes fade {
+    0% {
+        transform: rotate(-90deg) scale(0.25, 0.25) translate(-100px);
+    }
+    25% {
+        transform: rotate(-180deg) scale(0.5, 0.5) translate(-100px);
+    }
+    50% {
+        transform: rotate(-270deg) scale(0.75, 0.75) translate(-50px);
+    }
+    100% {
+        transform: rotate(-360deg) scale(1, 1);
+    }
+}
+
+
+
+@media (max-width: 426px) {
+    .title-div{
+        flex-direction: column;
+    }
+
+    .tiro-devanagari-marathi-regular-italic{
+        font-size: 80px;
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+    /* background: rgba(0, 0, 0, 0.5);  */
+    /* background: linear-gradient(to bottom, #33ccff 0%, #ff99cc 100%); */
