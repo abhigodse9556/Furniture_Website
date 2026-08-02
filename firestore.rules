@@ -1,7 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // All shop data is read/written only via Express + Firebase Admin SDK.
+    // All shop data is read/written only via Next.js Admin SDK (server routes).
     match /{document=**} {
       allow read, write: if false;
     }
