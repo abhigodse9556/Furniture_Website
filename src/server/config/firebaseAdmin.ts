@@ -1,5 +1,4 @@
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { readFileSync } from "node:fs";
@@ -11,15 +10,35 @@ import { config } from "./env";
 let app: App | null = null;
 let db: Firestore | null = null;
 
+function parseServiceAccountJson(raw: string): ServiceAccount {
+  const trimmed = raw.trim();
+  // Vercel sometimes stores JSON with surrounding quotes.
+  const unquoted =
+    (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+    (trimmed.startsWith('"') && trimmed.endsWith('"'))
+      ? trimmed.slice(1, -1)
+      : trimmed;
+
+  const parsed = JSON.parse(unquoted) as ServiceAccount & {
+    private_key?: string;
+  };
+
+  if (typeof parsed.private_key === "string") {
+    parsed.private_key = parsed.private_key.replace(/\\n/g, "\n");
+  }
+
+  return parsed;
+}
+
 function loadServiceAccount(): ServiceAccount {
   if (config.firebaseServiceAccountJson) {
-    return JSON.parse(config.firebaseServiceAccountJson) as ServiceAccount;
+    return parseServiceAccountJson(config.firebaseServiceAccountJson);
   }
 
   if (config.googleApplicationCredentials) {
     const absolutePath = resolve(config.googleApplicationCredentials);
     const raw = readFileSync(absolutePath, "utf8");
-    return JSON.parse(raw) as ServiceAccount;
+    return parseServiceAccountJson(raw);
   }
 
   throw new Error(
@@ -53,7 +72,8 @@ export function getDb(): Firestore {
   return db;
 }
 
-export function getAdminAuth() {
+export async function getAdminAuth() {
+  const { getAuth } = await import("firebase-admin/auth");
   return getAuth(getFirebaseApp());
 }
 

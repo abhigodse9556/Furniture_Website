@@ -27,7 +27,8 @@ export async function requireAdmin(
   }
 
   try {
-    const decoded = await getAdminAuth().verifyIdToken(token);
+    const auth = await getAdminAuth();
+    const decoded = await auth.verifyIdToken(token);
     const email = (decoded.email ?? "").toLowerCase();
 
     if (!email || email !== config.adminEmail) {
