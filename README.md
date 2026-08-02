@@ -37,3 +37,17 @@ npm run dev
 - API health: http://localhost:4000/health
 
 Until the API/Firebase are configured, the public site falls back to the built-in static catalog so pages still render.
+
+## Deploy client on Vercel
+
+The Next.js app lives in `client/`. In the Vercel project:
+
+1. **Settings → General → Root Directory** → set to `client` (Include source files outside the Root Directory can stay off).
+2. **Settings → Build and Deployment**:
+   - Framework Preset: **Next.js**
+   - Build Command: `npm run build` (default)
+   - Output Directory: leave **empty** (do not set `.next` manually)
+3. **Settings → Environment Variables** — add the same keys as `client/.env` / `client/.env.example` (all `NEXT_PUBLIC_*`).
+4. Redeploy (**Deployments → … → Redeploy**, clear cache if the first deploy was with the wrong root).
+
+If Root Directory stays at the repo root, Vercel has nothing to build and every URL returns `404: NOT_FOUND`.
