@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Public read for catalog/banner images; all writes via Admin SDK only.
+    match /products/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /banners/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /generic/{fileName} {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}
