@@ -5,16 +5,6 @@ export type ProductCategory =
   | "wardrobes"
   | "generic";
 
-export type Product = {
-  id?: string;
-  slug: string;
-  name: string;
-  category: ProductCategory;
-  description: string;
-  imageUrl: string;
-  featured?: boolean;
-};
-
 export type SiteSettings = {
   name: string;
   nameMr: string;
@@ -30,14 +20,20 @@ export type Banner = {
   imageUrl: string;
   order: number;
   active: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
-export const CATEGORY_LABELS: Record<ProductCategory, string> = {
-  chairs: "Chairs",
-  tables: "Tables",
-  doors: "Doors",
-  wardrobes: "Wardrobes",
-  generic: "Sets & More",
+export type Product = {
+  id: string;
+  slug: string;
+  name: string;
+  category: ProductCategory;
+  description: string;
+  imageUrl: string;
+  featured: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export const PRODUCT_CATEGORIES: ProductCategory[] = [

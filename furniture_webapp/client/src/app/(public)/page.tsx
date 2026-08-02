@@ -3,9 +3,12 @@ import Link from "next/link";
 import { AdBannerCarousel } from "@/components/AdBannerCarousel";
 import { Hero } from "@/components/Hero";
 import { ProductCard } from "@/components/ProductCard";
-import { getCategories, getFeaturedProducts } from "@/data/products";
-import { CATEGORY_LABELS } from "@/lib/types";
-import { SITE } from "@/lib/site";
+import {
+  fetchBanners,
+  fetchProducts,
+  fetchSite,
+} from "@/lib/publicData";
+import { CATEGORY_LABELS, PRODUCT_CATEGORIES } from "@/lib/types";
 
 const categoryImages: Record<string, string> = {
   chairs:
@@ -20,13 +23,17 @@ const categoryImages: Record<string, string> = {
     "/images/generic/png-transparent-brown-wooden-bedroom-furniture-set-art-bedside-tables-metal-furniture-couch-furniture-angle-furniture-drawer-thumbnail.png",
 };
 
-export default function HomePage() {
-  const featured = getFeaturedProducts().slice(0, 4);
-  const categories = getCategories();
+export default async function HomePage() {
+  const [site, banners, featured] = await Promise.all([
+    fetchSite(),
+    fetchBanners(),
+    fetchProducts({ featured: true }),
+  ]);
+  const featuredSlice = featured.slice(0, 4);
 
   return (
     <>
-      <Hero />
+      <Hero site={site} />
 
       <section className="site-shell py-16 sm:py-20">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -36,13 +43,16 @@ export default function HomePage() {
             </p>
             <h2 className="section-heading mt-2">Shop by category</h2>
           </div>
-          <Link href="/catalog" className="text-sm font-semibold text-[var(--accent-deep)] hover:underline">
+          <Link
+            href="/catalog"
+            className="text-sm font-semibold text-[var(--accent-deep)] hover:underline"
+          >
             View full catalog
           </Link>
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {categories.map((category) => (
+          {PRODUCT_CATEGORIES.map((category) => (
             <Link
               key={category}
               href={`/catalog?category=${category}`}
@@ -73,9 +83,11 @@ export default function HomePage() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--muted)]">
               Our craft
             </p>
-            <h2 className="section-heading mt-2">Furniture made to be lived with</h2>
+            <h2 className="section-heading mt-2">
+              Furniture made to be lived with
+            </h2>
             <p className="mt-5 max-w-prose text-base leading-relaxed text-[var(--muted)] sm:text-lg">
-              At {SITE.name}, every piece starts with solid timber and careful
+              At {site.name}, every piece starts with solid timber and careful
               joinery. From dining tables to wardrobes, we build furniture that
               feels grounded in the home — practical, warm, and lasting.
             </p>
@@ -83,7 +95,7 @@ export default function HomePage() {
               About the shop
             </Link>
           </div>
-          <AdBannerCarousel priority />
+          <AdBannerCarousel banners={banners} priority />
         </div>
       </section>
 
@@ -95,13 +107,20 @@ export default function HomePage() {
             </p>
             <h2 className="section-heading mt-2">Pieces worth a closer look</h2>
           </div>
-          <Link href="/catalog" className="text-sm font-semibold text-[var(--accent-deep)] hover:underline">
+          <Link
+            href="/catalog"
+            className="text-sm font-semibold text-[var(--accent-deep)] hover:underline"
+          >
             See all pieces
           </Link>
         </div>
         <div className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-          {featured.map((product, i) => (
-            <ProductCard key={product.slug} product={product} priority={i < 2} />
+          {featuredSlice.map((product, i) => (
+            <ProductCard
+              key={product.slug}
+              product={product}
+              priority={i < 2}
+            />
           ))}
         </div>
       </section>

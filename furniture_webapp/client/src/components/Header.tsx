@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SITE } from "@/lib/site";
+import type { SiteSettings } from "@/lib/types";
 
 const links = [
   { href: "/", label: "Home" },
@@ -13,7 +14,7 @@ const links = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function Header() {
+export function Header({ site = SITE }: { site?: SiteSettings }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [navPath, setNavPath] = useState(pathname);
@@ -43,7 +44,7 @@ export function Header() {
           >
             <Image
               src="/logo/logo-with-name-rectangle.png"
-              alt={SITE.name}
+              alt={site.name}
               width={2172}
               height={724}
               className="h-12 w-auto max-w-[min(100%,18rem)] object-contain transition-transform duration-300 group-hover:scale-[1.02] sm:h-14 sm:max-w-[22rem] md:h-16 md:max-w-[26rem]"

@@ -2,12 +2,17 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getProductBySlug, products } from "@/data/products";
+import type { Product, SiteSettings } from "@/lib/types";
 import { SITE } from "@/lib/site";
 
 type Status = "idle" | "success";
 
-export function InquiryForm() {
+type Props = {
+  products: Product[];
+  site?: SiteSettings;
+};
+
+export function InquiryForm({ products, site = SITE }: Props) {
   const searchParams = useSearchParams();
   const initialProduct = searchParams.get("product") ?? "";
   const [status, setStatus] = useState<Status>("idle");
@@ -19,8 +24,8 @@ export function InquiryForm() {
   const [error, setError] = useState("");
 
   const productName = useMemo(() => {
-    return getProductBySlug(productSlug)?.name ?? "";
-  }, [productSlug]);
+    return products.find((p) => p.slug === productSlug)?.name ?? "";
+  }, [productSlug, products]);
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -38,7 +43,7 @@ export function InquiryForm() {
     const subject = encodeURIComponent(
       productName
         ? `Inquiry: ${productName}`
-        : `Inquiry from ${SITE.name} website`,
+        : `Inquiry from ${site.name} website`,
     );
     const body = encodeURIComponent(
       [
@@ -53,7 +58,7 @@ export function InquiryForm() {
         .join("\n"),
     );
 
-    window.location.href = `mailto:${SITE.email}?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${site.email}?subject=${subject}&body=${body}`;
     setStatus("success");
   }
 
@@ -69,8 +74,11 @@ export function InquiryForm() {
         <p className="mt-3 text-[var(--muted)] leading-relaxed">
           Your email client should open with the inquiry filled in. If it
           doesn&apos;t, write to us at{" "}
-          <a className="text-[var(--accent-deep)] underline" href={`mailto:${SITE.email}`}>
-            {SITE.email}
+          <a
+            className="text-[var(--accent-deep)] underline"
+            href={`mailto:${site.email}`}
+          >
+            {site.email}
           </a>
           .
         </p>

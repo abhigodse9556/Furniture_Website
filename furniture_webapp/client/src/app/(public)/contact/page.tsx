@@ -1,14 +1,22 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { InquiryForm } from "@/components/InquiryForm";
-import { SITE } from "@/lib/site";
+import { fetchProducts, fetchSite } from "@/lib/publicData";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: `Inquire with ${SITE.name} about furniture for your home.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const site = await fetchSite();
+  return {
+    title: "Contact",
+    description: `Inquire with ${site.name} about furniture for your home.`,
+  };
+}
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const [site, products] = await Promise.all([
+    fetchSite(),
+    fetchProducts(),
+  ]);
+
   return (
     <div className="site-shell py-12 sm:py-16">
       <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
@@ -30,9 +38,9 @@ export default function ContactPage() {
               <dd className="mt-1">
                 <a
                   className="text-[var(--ink)] hover:text-[var(--accent-deep)]"
-                  href={`tel:${SITE.phone.replace(/\s/g, "")}`}
+                  href={`tel:${site.phone.replace(/\s/g, "")}`}
                 >
-                  {SITE.phone}
+                  {site.phone}
                 </a>
               </dd>
             </div>
@@ -43,9 +51,9 @@ export default function ContactPage() {
               <dd className="mt-1">
                 <a
                   className="text-[var(--ink)] hover:text-[var(--accent-deep)]"
-                  href={`mailto:${SITE.email}`}
+                  href={`mailto:${site.email}`}
                 >
-                  {SITE.email}
+                  {site.email}
                 </a>
               </dd>
             </div>
@@ -53,7 +61,7 @@ export default function ContactPage() {
               <dt className="font-semibold uppercase tracking-[0.1em] text-[var(--muted)]">
                 Location
               </dt>
-              <dd className="mt-1 text-[var(--ink)]">{SITE.address}</dd>
+              <dd className="mt-1 text-[var(--ink)]">{site.address}</dd>
             </div>
           </dl>
         </div>
@@ -66,7 +74,7 @@ export default function ContactPage() {
             />
           }
         >
-          <InquiryForm />
+          <InquiryForm products={products} site={site} />
         </Suspense>
       </div>
     </div>

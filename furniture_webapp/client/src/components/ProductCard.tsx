@@ -16,7 +16,7 @@ export function ProductCard({ product, priority }: Props) {
     >
       <div className="relative aspect-[4/5] overflow-hidden bg-[var(--surface-elevated)]">
         <Image
-          src={product.image}
+          src={product.imageUrl}
           alt={product.name}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"

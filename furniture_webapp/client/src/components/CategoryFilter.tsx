@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { ProductCategory } from "@/lib/types";
-import { CATEGORY_LABELS } from "@/lib/types";
-import { getCategories } from "@/data/products";
+import { CATEGORY_LABELS, PRODUCT_CATEGORIES } from "@/lib/types";
 
 type Props = {
   active: ProductCategory | "all";
@@ -13,7 +12,7 @@ type Props = {
 export function CategoryFilter({ active }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const categories = getCategories();
+  const categories = PRODUCT_CATEGORIES;
 
   function select(next: ProductCategory | "all") {
     const params = new URLSearchParams(searchParams.toString());

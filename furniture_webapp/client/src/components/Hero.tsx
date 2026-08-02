@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { SITE } from "@/lib/site";
+import type { SiteSettings } from "@/lib/types";
 
-export function Hero() {
+export function Hero({ site }: { site: SiteSettings }) {
   return (
     <section className="relative isolate min-h-[min(92vh,880px)] overflow-hidden">
       <Image
@@ -23,13 +23,13 @@ export function Hero() {
             lang="mr"
             className="mb-3 font-[family-name:var(--font-display)] text-base text-[var(--oak-light)] sm:text-lg"
           >
-            {SITE.nameMr}
+            {site.nameMr}
           </p>
           <h1 className="font-[family-name:var(--font-display)] text-[clamp(2.4rem,6vw,4.75rem)] leading-[1.05] tracking-tight text-white">
-            {SITE.name}
+            {site.name}
           </h1>
           <p className="mt-5 max-w-md text-base leading-relaxed text-white/85 sm:text-lg">
-            {SITE.tagline}. Browse our collection of chairs, tables, doors, and
+            {site.tagline}. Browse our collection of chairs, tables, doors, and
             wardrobes — then inquire about the piece that fits your home.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">

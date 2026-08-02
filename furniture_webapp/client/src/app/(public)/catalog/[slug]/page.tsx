@@ -2,20 +2,24 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProductBySlug, products } from "@/data/products";
+import {
+  fetchAllProductSlugs,
+  fetchProductBySlug,
+} from "@/lib/publicData";
 import { CATEGORY_LABELS } from "@/lib/types";
 
 type Props = {
   params: Promise<{ slug: string }>;
 };
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  const slugs = await fetchAllProductSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await fetchProductBySlug(slug);
   if (!product) return { title: "Product" };
   return {
     title: product.name,
@@ -25,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await fetchProductBySlug(slug);
   if (!product) notFound();
 
   return (
@@ -54,7 +58,7 @@ export default async function ProductPage({ params }: Props) {
       <div className="mt-8 grid gap-10 lg:grid-cols-2 lg:gap-14 lg:items-start">
         <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-[var(--surface-elevated)]">
           <Image
-            src={product.image}
+            src={product.imageUrl}
             alt={product.name}
             fill
             priority
