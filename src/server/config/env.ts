@@ -1,6 +1,9 @@
 export const config = {
   nodeEnv: process.env.NODE_ENV ?? "development",
-  adminEmail: (process.env.ADMIN_EMAIL ?? "").trim().toLowerCase(),
+  adminEmails: (process.env.ADMIN_EMAIL ?? "")
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean),
   storageBucket: process.env.FIREBASE_STORAGE_BUCKET?.trim() || undefined,
   googleApplicationCredentials:
     process.env.GOOGLE_APPLICATION_CREDENTIALS?.trim() || undefined,

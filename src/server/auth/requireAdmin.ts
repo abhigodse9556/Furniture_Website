@@ -12,7 +12,7 @@ export type AdminIdentity = {
 export async function requireAdmin(
   request: Request,
 ): Promise<AdminIdentity> {
-  if (!config.adminEmail) {
+  if (config.adminEmails.length === 0) {
     throw new HttpError(500, "ADMIN_EMAIL is not configured on the server.");
   }
 
@@ -31,7 +31,7 @@ export async function requireAdmin(
     const decoded = await auth.verifyIdToken(token);
     const email = (decoded.email ?? "").toLowerCase();
 
-    if (!email || email !== config.adminEmail) {
+    if (!email || !config.adminEmails.includes(email)) {
       throw new HttpError(403, "Not authorized as shop admin.");
     }
 
