@@ -2,20 +2,29 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useCallback, useEffect, useState } from "react";
 
 import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
 import {
   PRODUCT_CATEGORIES,
+  INQUIRY_STATUSES,
   type Banner,
+  type Inquiry,
+  type InquiryStatus,
   type Product,
   type ProductCategory,
   type SiteSettings,
   CATEGORY_LABELS,
 } from "@/lib/types";
 
-type Tab = "site" | "banners" | "products";
+type Tab = "site" | "banners" | "products" | "inquiries";
+
+const TABS: Tab[] = ["site", "banners", "products", "inquiries"];
+
+function isTab(value: string | null): value is Tab {
+  return value !== null && TABS.includes(value as Tab);
+}
 
 const emptyProductForm = {
   name: "",
@@ -27,9 +36,27 @@ const emptyProductForm = {
 };
 
 export default function AdminDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="site-shell flex min-h-screen items-center justify-center text-[var(--muted)]">
+          Loading admin…
+        </div>
+      }
+    >
+      <AdminDashboard />
+    </Suspense>
+  );
+}
+
+function AdminDashboard() {
   const { user, loading, configured, logout, adminFetch } = useAdminAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("site");
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [tab, setTab] = useState<Tab>(() =>
+    isTab(tabParam) ? tabParam : "site",
+  );
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -37,20 +64,23 @@ export default function AdminDashboardPage() {
   const [site, setSite] = useState<SiteSettings | null>(null);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
 
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     setError("");
-    const [siteData, bannerData, productData] = await Promise.all([
+    const [siteData, bannerData, productData, inquiryData] = await Promise.all([
       adminFetch<SiteSettings>("/api/site"),
       adminFetch<Banner[]>("/api/admin/banners"),
       adminFetch<Product[]>("/api/admin/products"),
+      adminFetch<Inquiry[]>("/api/admin/inquiries"),
     ]);
     setSite(siteData);
     setBanners(bannerData);
     setProducts(productData);
+    setInquiries(inquiryData);
   }, [adminFetch]);
 
   useEffect(() => {
@@ -60,20 +90,34 @@ export default function AdminDashboardPage() {
   }, [loading, user, router]);
 
   useEffect(() => {
+    if (isTab(tabParam) && tabParam !== tab) {
+      setTab(tabParam);
+    }
+  }, [tabParam, tab]);
+
+  function selectTab(next: Tab) {
+    setTab(next);
+    router.replace(`/admin?tab=${next}`, { scroll: false });
+  }
+
+  useEffect(() => {
     if (!user) return;
     let cancelled = false;
 
     void (async () => {
       try {
-        const [siteData, bannerData, productData] = await Promise.all([
-          adminFetch<SiteSettings>("/api/site"),
-          adminFetch<Banner[]>("/api/admin/banners"),
-          adminFetch<Product[]>("/api/admin/products"),
-        ]);
+        const [siteData, bannerData, productData, inquiryData] =
+          await Promise.all([
+            adminFetch<SiteSettings>("/api/site"),
+            adminFetch<Banner[]>("/api/admin/banners"),
+            adminFetch<Product[]>("/api/admin/products"),
+            adminFetch<Inquiry[]>("/api/admin/inquiries"),
+          ]);
         if (cancelled) return;
         setSite(siteData);
         setBanners(bannerData);
         setProducts(productData);
+        setInquiries(inquiryData);
         setError("");
       } catch (err) {
         if (cancelled) return;
@@ -215,6 +259,7 @@ export default function AdminDashboardPage() {
       featured: Boolean(product.featured),
     });
     setTab("products");
+    router.replace("/admin?tab=products", { scroll: false });
   }
 
   async function removeProduct(id?: string) {
@@ -228,6 +273,28 @@ export default function AdminDashboardPage() {
       setMessage("Product deleted.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not delete product.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setInquiryStatus(id: string, status: InquiryStatus) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const updated = await adminFetch<Inquiry>(`/api/admin/inquiries/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      setInquiries((prev) =>
+        prev.map((item) => (item.id === id ? updated : item)),
+      );
+      setMessage(`Inquiry marked as ${status}.`);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not update inquiry.",
+      );
     } finally {
       setBusy(false);
     }
@@ -283,12 +350,13 @@ export default function AdminDashboardPage() {
             ["site", "Shop info"],
             ["banners", "Banners"],
             ["products", "Products"],
+            ["inquiries", "Inquiries"],
           ] as const
         ).map(([id, label]) => (
           <button
             key={id}
             type="button"
-            onClick={() => setTab(id)}
+            onClick={() => selectTab(id)}
             className={`rounded-sm px-4 py-2.5 text-sm font-semibold transition-colors ${
               tab === id
                 ? "bg-[var(--ink)] text-[var(--surface-elevated)]"
@@ -579,6 +647,87 @@ export default function AdminDashboardPage() {
               </div>
             ))}
           </div>
+        </div>
+      ) : null}
+
+      {tab === "inquiries" ? (
+        <div className="mt-8 space-y-4">
+          {inquiries.length === 0 ? (
+            <p className="rounded-sm border border-[var(--border)] bg-[var(--surface-elevated)] p-5 text-sm text-[var(--muted)]">
+              No inquiries yet. When visitors submit the contact form, they will
+              appear here.
+            </p>
+          ) : (
+            inquiries.map((inquiry) => (
+              <article
+                key={inquiry.id}
+                className="rounded-sm border border-[var(--border)] bg-[var(--surface-elevated)] p-5 sm:p-6"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h2 className="font-semibold text-[var(--ink)]">
+                      {inquiry.name}
+                      {inquiry.status === "new" ? (
+                        <span className="ml-2 text-xs font-semibold uppercase tracking-[0.1em] text-[var(--accent-deep)]">
+                          New
+                        </span>
+                      ) : null}
+                    </h2>
+                    <p className="mt-1 text-xs text-[var(--muted)]">
+                      {inquiry.createdAt
+                        ? new Date(inquiry.createdAt).toLocaleString()
+                        : ""}
+                      {inquiry.productName
+                        ? ` · ${inquiry.productName}`
+                        : " · General inquiry"}
+                    </p>
+                    <p className="mt-2 text-sm text-[var(--muted)]">
+                      {inquiry.email ? (
+                        <a
+                          className="text-[var(--accent-deep)] underline"
+                          href={`mailto:${inquiry.email}`}
+                        >
+                          {inquiry.email}
+                        </a>
+                      ) : null}
+                      {inquiry.email && inquiry.phone ? " · " : null}
+                      {inquiry.phone ? (
+                        <a
+                          className="text-[var(--accent-deep)] underline"
+                          href={`tel:${inquiry.phone.replace(/\s/g, "")}`}
+                        >
+                          {inquiry.phone}
+                        </a>
+                      ) : null}
+                    </p>
+                  </div>
+                  <label className="block shrink-0 sm:w-40">
+                    <span className="field-label">Status</span>
+                    <select
+                      className="field-input"
+                      value={inquiry.status}
+                      disabled={busy}
+                      onChange={(e) =>
+                        void setInquiryStatus(
+                          inquiry.id,
+                          e.target.value as InquiryStatus,
+                        )
+                      }
+                    >
+                      {INQUIRY_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-[var(--ink)]">
+                  {inquiry.message}
+                </p>
+              </article>
+            ))
+          )}
         </div>
       ) : null}
     </div>

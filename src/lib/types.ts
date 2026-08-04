@@ -36,6 +36,28 @@ export type Banner = {
   updatedAt?: string;
 };
 
+export type InquiryStatus = "new" | "read" | "replied" | "archived";
+
+export type Inquiry = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  productSlug: string;
+  productName: string;
+  message: string;
+  status: InquiryStatus;
+  createdAt: string;
+  updatedAt?: string;
+};
+
+export const INQUIRY_STATUSES: InquiryStatus[] = [
+  "new",
+  "read",
+  "replied",
+  "archived",
+];
+
 export const CATEGORY_LABELS: Record<ProductCategory, string> = {
   chairs: "Chairs",
   tables: "Tables",

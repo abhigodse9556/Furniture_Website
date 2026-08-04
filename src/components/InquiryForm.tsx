@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ApiError, apiFetch } from "@/lib/api";
 import type { Product, SiteSettings } from "@/lib/types";
 import { SITE } from "@/lib/site";
 
@@ -16,18 +17,20 @@ export function InquiryForm({ products, site = SITE }: Props) {
   const searchParams = useSearchParams();
   const initialProduct = searchParams.get("product") ?? "";
   const [status, setStatus] = useState<Status>("idle");
+  const [submitting, setSubmitting] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [productSlug, setProductSlug] = useState(initialProduct);
   const [message, setMessage] = useState("");
+  const [website, setWebsite] = useState("");
   const [error, setError] = useState("");
 
   const productName = useMemo(() => {
     return products.find((p) => p.slug === productSlug)?.name ?? "";
   }, [productSlug, products]);
 
-  function onSubmit(e: FormEvent) {
+  async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
 
@@ -40,26 +43,36 @@ export function InquiryForm({ products, site = SITE }: Props) {
       return;
     }
 
-    const subject = encodeURIComponent(
-      productName
-        ? `Inquiry: ${productName}`
-        : `Inquiry from ${site.name} website`,
-    );
-    const body = encodeURIComponent(
-      [
-        `Name: ${name.trim()}`,
-        email.trim() ? `Email: ${email.trim()}` : null,
-        phone.trim() ? `Phone: ${phone.trim()}` : null,
-        productName ? `Product: ${productName}` : null,
-        "",
-        message.trim(),
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    );
-
-    window.location.href = `mailto:${site.email}?subject=${subject}&body=${body}`;
-    setStatus("success");
+    setSubmitting(true);
+    try {
+      await apiFetch<{ ok: boolean }>("/api/inquiries", {
+        method: "POST",
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          productSlug: productSlug || undefined,
+          productName: productName || undefined,
+          message: message.trim(),
+          website,
+        }),
+      });
+      setStatus("success");
+      setName("");
+      setEmail("");
+      setPhone("");
+      setProductSlug("");
+      setMessage("");
+      setWebsite("");
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Could not send your inquiry. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (status === "success") {
@@ -72,8 +85,8 @@ export function InquiryForm({ products, site = SITE }: Props) {
           Thank you
         </h2>
         <p className="mt-3 text-[var(--muted)] leading-relaxed">
-          Your email client should open with the inquiry filled in. If it
-          doesn&apos;t, write to us at{" "}
+          Your inquiry has been sent. We will follow up by email or phone soon.
+          You can also reach us at{" "}
           <a
             className="text-[var(--accent-deep)] underline"
             href={`mailto:${site.email}`}
@@ -159,6 +172,20 @@ export function InquiryForm({ products, site = SITE }: Props) {
             required
           />
         </label>
+        {/* Honeypot — hidden from people, visible to simple bots */}
+        <label
+          className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden"
+          aria-hidden="true"
+        >
+          <span>Website</span>
+          <input
+            tabIndex={-1}
+            autoComplete="off"
+            name="website"
+            value={website}
+            onChange={(e) => setWebsite(e.target.value)}
+          />
+        </label>
       </div>
 
       {error ? (
@@ -167,8 +194,12 @@ export function InquiryForm({ products, site = SITE }: Props) {
         </p>
       ) : null}
 
-      <button type="submit" className="btn-primary w-full sm:w-auto">
-        Send inquiry
+      <button
+        type="submit"
+        className="btn-primary w-full sm:w-auto"
+        disabled={submitting}
+      >
+        {submitting ? "Sending…" : "Send inquiry"}
       </button>
     </form>
   );
