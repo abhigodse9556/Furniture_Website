@@ -316,6 +316,7 @@ async function seed() {
     for (const product of seedProducts) {
       await db.collection("products").add({
         ...product,
+        rate: 0,
         featured: Boolean(product.featured),
         createdAt: now,
         updatedAt: now,

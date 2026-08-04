@@ -18,6 +18,12 @@ function slugify(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+function parseRate(value: unknown): number {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.round(n * 100) / 100;
+}
+
 function mapProduct(id: string, data: Record<string, unknown>): Product {
   return {
     id,
@@ -26,6 +32,7 @@ function mapProduct(id: string, data: Record<string, unknown>): Product {
     category: data.category as ProductCategory,
     description: String(data.description ?? ""),
     imageUrl: String(data.imageUrl ?? data.image ?? ""),
+    rate: parseRate(data.rate),
     featured: Boolean(data.featured ?? false),
     createdAt: data.createdAt as string | undefined,
     updatedAt: data.updatedAt as string | undefined,
@@ -84,6 +91,7 @@ export async function createProduct(input: {
   category: string;
   description: string;
   imageUrl: string;
+  rate?: number;
   featured?: boolean;
 }): Promise<Product> {
   const name = input.name?.trim();
@@ -100,6 +108,7 @@ export async function createProduct(input: {
   }
   await assertUniqueSlug(slug);
 
+  const rate = parseRate(input.rate);
   const now = new Date().toISOString();
   const ref = collection().doc();
   const doc = {
@@ -108,6 +117,7 @@ export async function createProduct(input: {
     category,
     description,
     imageUrl,
+    rate,
     featured: Boolean(input.featured),
     createdAt: now,
     updatedAt: now,
@@ -124,6 +134,7 @@ export async function updateProduct(
     category: string;
     description: string;
     imageUrl: string;
+    rate: number;
     featured: boolean;
   }>,
 ): Promise<Product> {
@@ -141,12 +152,16 @@ export async function updateProduct(
   const slug = slugify(input.slug?.trim() || existing.slug || name);
   await assertUniqueSlug(slug, id);
 
+  const rate =
+    input.rate !== undefined ? parseRate(input.rate) : existing.rate;
+
   const next = {
     slug,
     name,
     category,
     description,
     imageUrl,
+    rate,
     featured:
       typeof input.featured === "boolean" ? input.featured : Boolean(existing.featured),
     createdAt: existing.createdAt,

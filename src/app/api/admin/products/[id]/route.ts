@@ -14,6 +14,7 @@ export async function PUT(request: Request, { params }: Params) {
       category: string;
       description: string;
       imageUrl: string;
+      rate: number;
       featured: boolean;
     }>;
     const product = await updateProduct(id, body);

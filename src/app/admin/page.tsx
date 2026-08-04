@@ -9,18 +9,21 @@ import { useAdminAuth } from "@/components/admin/AdminAuthProvider";
 import {
   PRODUCT_CATEGORIES,
   INQUIRY_STATUSES,
+  INVOICE_STATUSES,
   type Banner,
   type Inquiry,
   type InquiryStatus,
+  type Invoice,
+  type InvoiceStatus,
   type Product,
   type ProductCategory,
   type SiteSettings,
   CATEGORY_LABELS,
 } from "@/lib/types";
 
-type Tab = "site" | "banners" | "products" | "inquiries";
+type Tab = "site" | "banners" | "products" | "inquiries" | "invoices";
 
-const TABS: Tab[] = ["site", "banners", "products", "inquiries"];
+const TABS: Tab[] = ["site", "banners", "products", "inquiries", "invoices"];
 
 function isTab(value: string | null): value is Tab {
   return value !== null && TABS.includes(value as Tab);
@@ -32,6 +35,7 @@ const emptyProductForm = {
   category: "chairs" as ProductCategory,
   description: "",
   imageUrl: "",
+  rate: 0,
   featured: false,
 };
 
@@ -65,22 +69,26 @@ function AdminDashboard() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
     setError("");
-    const [siteData, bannerData, productData, inquiryData] = await Promise.all([
-      adminFetch<SiteSettings>("/api/site"),
-      adminFetch<Banner[]>("/api/admin/banners"),
-      adminFetch<Product[]>("/api/admin/products"),
-      adminFetch<Inquiry[]>("/api/admin/inquiries"),
-    ]);
+    const [siteData, bannerData, productData, inquiryData, invoiceData] =
+      await Promise.all([
+        adminFetch<SiteSettings>("/api/site"),
+        adminFetch<Banner[]>("/api/admin/banners"),
+        adminFetch<Product[]>("/api/admin/products"),
+        adminFetch<Inquiry[]>("/api/admin/inquiries"),
+        adminFetch<Invoice[]>("/api/admin/invoices"),
+      ]);
     setSite(siteData);
     setBanners(bannerData);
     setProducts(productData);
     setInquiries(inquiryData);
+    setInvoices(invoiceData);
   }, [adminFetch]);
 
   useEffect(() => {
@@ -106,18 +114,20 @@ function AdminDashboard() {
 
     void (async () => {
       try {
-        const [siteData, bannerData, productData, inquiryData] =
+        const [siteData, bannerData, productData, inquiryData, invoiceData] =
           await Promise.all([
             adminFetch<SiteSettings>("/api/site"),
             adminFetch<Banner[]>("/api/admin/banners"),
             adminFetch<Product[]>("/api/admin/products"),
             adminFetch<Inquiry[]>("/api/admin/inquiries"),
+            adminFetch<Invoice[]>("/api/admin/invoices"),
           ]);
         if (cancelled) return;
         setSite(siteData);
         setBanners(bannerData);
         setProducts(productData);
         setInquiries(inquiryData);
+        setInvoices(invoiceData);
         setError("");
       } catch (err) {
         if (cancelled) return;
@@ -256,6 +266,7 @@ function AdminDashboard() {
       category: product.category,
       description: product.description,
       imageUrl: product.imageUrl,
+      rate: product.rate ?? 0,
       featured: Boolean(product.featured),
     });
     setTab("products");
@@ -273,6 +284,28 @@ function AdminDashboard() {
       setMessage("Product deleted.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not delete product.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function setInvoiceStatus(id: string, status: InvoiceStatus) {
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const updated = await adminFetch<Invoice>(`/api/admin/invoices/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      setInvoices((prev) =>
+        prev.map((item) => (item.id === id ? updated : item)),
+      );
+      setMessage(`Invoice marked as ${status}.`);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not update invoice.",
+      );
     } finally {
       setBusy(false);
     }
@@ -351,6 +384,7 @@ function AdminDashboard() {
             ["banners", "Banners"],
             ["products", "Products"],
             ["inquiries", "Inquiries"],
+            ["invoices", "Invoices"],
           ] as const
         ).map(([id, label]) => (
           <button
@@ -536,6 +570,22 @@ function AdminDashboard() {
               />
             </label>
             <label className="block">
+              <span className="field-label">Rate (INR)</span>
+              <input
+                className="field-input"
+                type="number"
+                min={0}
+                step="0.01"
+                value={productForm.rate}
+                onChange={(e) =>
+                  setProductForm((p) => ({
+                    ...p,
+                    rate: Number(e.target.value) || 0,
+                  }))
+                }
+              />
+            </label>
+            <label className="block">
               <span className="field-label">Image URL</span>
               <input
                 className="field-input"
@@ -625,6 +675,7 @@ function AdminDashboard() {
                   <p className="text-xs text-[var(--muted)]">
                     {CATEGORY_LABELS[product.category]}
                     {product.featured ? " · Featured" : ""}
+                    {` · ₹${Number(product.rate ?? 0).toFixed(2)}`}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <button
@@ -725,6 +776,67 @@ function AdminDashboard() {
                 <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-[var(--ink)]">
                   {inquiry.message}
                 </p>
+              </article>
+            ))
+          )}
+        </div>
+      ) : null}
+
+      {tab === "invoices" ? (
+        <div className="mt-8 space-y-4">
+          <p className="text-sm text-[var(--muted)]">
+            Invoices are created from the mobile app. You can review history and
+            update status here.
+          </p>
+          {invoices.length === 0 ? (
+            <p className="rounded-sm border border-[var(--border)] bg-[var(--surface-elevated)] p-5 text-sm text-[var(--muted)]">
+              No invoices yet.
+            </p>
+          ) : (
+            invoices.map((invoice) => (
+              <article
+                key={invoice.id}
+                className="rounded-sm border border-[var(--border)] bg-[var(--surface-elevated)] p-5 sm:p-6"
+              >
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <h2 className="font-semibold text-[var(--ink)]">
+                      {invoice.invoiceNumber}
+                    </h2>
+                    <p className="mt-1 text-xs text-[var(--muted)]">
+                      {invoice.date} · {invoice.customer.name} · ₹
+                      {Number(invoice.totalAmount).toFixed(2)}
+                    </p>
+                    <ul className="mt-3 space-y-1 text-sm text-[var(--ink)]">
+                      {invoice.lineItems.map((line, index) => (
+                        <li key={`${invoice.id}-${index}`}>
+                          {line.productName} — ₹{line.rate.toFixed(2)} ×{" "}
+                          {line.quantity} = ₹{line.price.toFixed(2)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <label className="block shrink-0 sm:w-40">
+                    <span className="field-label">Status</span>
+                    <select
+                      className="field-input"
+                      value={invoice.status}
+                      disabled={busy}
+                      onChange={(e) =>
+                        void setInvoiceStatus(
+                          invoice.id,
+                          e.target.value as InvoiceStatus,
+                        )
+                      }
+                    >
+                      {INVOICE_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
               </article>
             ))
           )}

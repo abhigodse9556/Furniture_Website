@@ -21,6 +21,7 @@ export async function POST(request: Request) {
       category: string;
       description: string;
       imageUrl: string;
+      rate?: number;
       featured?: boolean;
     };
     const product = await createProduct(body);

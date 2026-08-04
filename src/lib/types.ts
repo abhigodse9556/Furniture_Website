@@ -12,10 +12,50 @@ export type Product = {
   category: ProductCategory;
   description: string;
   imageUrl: string;
+  /** INR unit price for invoicing; defaults to 0 for legacy docs */
+  rate: number;
   featured?: boolean;
   createdAt?: string;
   updatedAt?: string;
 };
+
+export type InvoiceStatus = "draft" | "issued" | "cancelled";
+
+export type InvoiceLineItem = {
+  productId?: string;
+  productSlug?: string;
+  productName: string;
+  rate: number;
+  quantity: number;
+  price: number;
+};
+
+export type InvoiceParty = {
+  name: string;
+  contact: string;
+  address?: string;
+};
+
+export type Invoice = {
+  id: string;
+  invoiceNumber: string;
+  date: string;
+  customer: InvoiceParty;
+  shopkeeper: InvoiceParty;
+  lineItems: InvoiceLineItem[];
+  totalAmount: number;
+  notes?: string;
+  status: InvoiceStatus;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const INVOICE_STATUSES: InvoiceStatus[] = [
+  "draft",
+  "issued",
+  "cancelled",
+];
 
 export type SiteSettings = {
   name: string;
